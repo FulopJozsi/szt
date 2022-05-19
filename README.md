@@ -4,6 +4,7 @@
 ```
 docker-compose up -d
 docker exec -it szallas-php-fpm bash
+cp .env.example .env
 composer install
 php artisan migrate:refresh --seed
 exit
