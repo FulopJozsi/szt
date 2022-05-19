@@ -1,0 +1,81 @@
+version: "3.7"
+services:
+
+    mariadb:
+      image: mariadb:10.4
+      container_name: szallas-mariadb
+      working_dir: /application
+      volumes:
+        - .:/application
+        - db:/var/lib/mysql
+      environment:
+        - MYSQL_ROOT_PASSWORD=szallas
+        - MYSQL_DATABASE=szallas
+        - MYSQL_USER=szallas
+        - MYSQL_PASSWORD=szallas
+      ports:
+        - "3306:3306"
+
+    webserver:
+      image: nginx:1.16.0
+      container_name: szallas-webserver
+      working_dir: /application
+      volumes:
+          - .:/application
+          - ./docker/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+          - ./docker/cert/szallas_dev_hu.crt:/etc/nginx/szallas_dev_hu.crt:ro
+          - ./docker/cert/szallas_dev_hu.key:/etc/nginx/szallas_dev_hu.key:ro
+      ports:
+        - "80:80"
+        - "443:443"
+      depends_on:
+        - php-fpm
+        - mariadb
+        - redis
+
+    php-fpm:
+      build: docker/php-fpm
+      container_name: szallas-php-fpm
+      working_dir: /application
+      volumes:
+        - .:/application
+        - ./docker/php-fpm/php-ini-overrides.ini:/etc/php/8.1/fpm/conf.d/99-overrides.ini:ro
+      environment:
+        - "DB_PORT=3306"
+        - "DB_HOST=mariadb"
+
+    redis:
+      image: redis:alpine
+      container_name: szallas-redis
+      ports:
+        - "6379:6379"
+      restart: always
+      depends_on:
+        - php-fpm
+        - mariadb
+
+    mailhog:
+      image: mailhog/mailhog:latest
+      container_name: szallas-mailhog
+      ports:
+        - "1025:1025"
+        - "8025:8025"
+
+    testdb:
+      image: mariadb:10.4
+      container_name: szallas-testdb
+      working_dir: /application
+      volumes:
+        - .:/application
+        - testdb:/var/lib/mysql
+      environment:
+        - MYSQL_ROOT_PASSWORD=szallas
+        - MYSQL_DATABASE=szallas
+        - MYSQL_USER=szallas
+        - MYSQL_PASSWORD=szallas
+      ports:
+        - "3307:3306"
+
+volumes:
+  db:
+  testdb:
